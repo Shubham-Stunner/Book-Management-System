@@ -1,0 +1,29 @@
+version: "3.9"
+services:
+  database:
+    image: mongo:6
+    container_name: mongo
+    restart: unless-stopped
+    ports: ["27017:27017"]
+    environment:
+      MONGO_INITDB_DATABASE: booksdb
+    volumes:
+      - mongo_data:/data/db
+      - ./database/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+
+  backend:
+    build: ./backend
+    depends_on: [database]
+    environment:
+      MONGODB_URI: mongodb://database:27017/booksdb
+    ports: ["8081:8081"]
+
+  frontend:
+    build: ./frontend
+    depends_on: [backend]
+    environment:
+      API_BASE: http://backend:8081
+    ports: ["8080:8080"]
+
+volumes:
+  mongo_data:
