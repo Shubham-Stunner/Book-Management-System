@@ -1,8 +1,34 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-<head><meta charset="UTF-8"><title>Book Management</title></head>
-<body>
-<h2>Book Management</h2>
-<p><a href="/books">View Books</a> | <a href="/books/add">Add Book</a></p>
+<head>
+  <meta charset="UTF-8">
+  <title>Book Management</title>
+  <link rel="stylesheet" th:href="@{/styles.css}">
+  </head>
+<body class="page">
+  <header class="topbar">
+    <div class="brand">📚 Book Management</div>
+    <nav class="nav">
+      <a href="/" class="nav-link active">Home</a>
+      <a href="/books" class="nav-link">Books</a>
+      <a href="/books/add" class="btn">Add Book</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <section class="card hero">
+      <h1>Manage your library with ease</h1>
+      <p class="muted">This is a simple 3-tier Java app (Frontend + Backend + MongoDB). Use the links above to view or add books.</p>
+      <div class="actions">
+        <a href="/books" class="btn btn-primary">View Books</a>
+        <a href="/books/add" class="btn">Add a Book</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">© <span id="y"></span> Book Management • Demo
+    <script>document.getElementById('y').textContent=new Date().getFullYear()</script>
+  </footer>
 </body>
 </html>
+

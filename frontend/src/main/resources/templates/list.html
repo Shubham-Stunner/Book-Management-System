@@ -1,22 +1,58 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-<head><meta charset="UTF-8"><title>Books</title></head>
-<body>
-<h2>Books</h2>
-<p><a href="/">Home</a> | <a href="/books/add">Add Book</a></p>
-<table border="1">
-  <tr><th>Title</th><th>Author</th><th>ISBN</th><th>Price</th><th>Action</th></tr>
-  <tr th:each="b : ${books}">
-    <td th:text="${b.title}"></td>
-    <td th:text="${b.author}"></td>
-    <td th:text="${b.isbn}"></td>
-    <td th:text="${b.price}"></td>
-    <td>
-      <form th:action="@{'/books/' + ${b.id} + '/delete'}" method="post">
-        <button type="submit">Delete</button>
-      </form>
-    </td>
-  </tr>
-</table>
+<head>
+  <meta charset="UTF-8">
+  <title>Books</title>
+  <link rel="stylesheet" th:href="@{/styles.css}">
+</head>
+<body class="page">
+  <header class="topbar">
+    <div class="brand">📚 Book Management</div>
+    <nav class="nav">
+      <a href="/" class="nav-link">Home</a>
+      <a href="/books" class="nav-link active">Books</a>
+      <a href="/books/add" class="btn">Add Book</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <div class="card-header">
+        <h2>Books</h2>
+        <a href="/books/add" class="btn">+ Add Book</a>
+      </div>
+
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+          <tr>
+            <th>Title</th><th>Author</th><th>ISBN</th><th class="num">Price</th><th>Action</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr th:if="${#lists.isEmpty(books)}">
+            <td colspan="5" class="muted center">No books yet. Add your first one!</td>
+          </tr>
+          <tr th:each="b : ${books}">
+            <td th:text="${b.title}"></td>
+            <td th:text="${b.author}"></td>
+            <td th:text="${b.isbn}"></td>
+            <td class="num" th:text="${#numbers.formatDecimal(b.price, 1, 'COMMA', 2, 'POINT')}"></td>
+            <td>
+              <form th:action="@{'/books/' + ${b.id} + '/delete'}" method="post" onsubmit="return confirm('Delete this book?')">
+                <button type="submit" class="btn btn-danger">Delete</button>
+              </form>
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">© <span id="y"></span> Book Management • Demo
+    <script>document.getElementById('y').textContent=new Date().getFullYear()</script>
+  </footer>
 </body>
 </html>
+
