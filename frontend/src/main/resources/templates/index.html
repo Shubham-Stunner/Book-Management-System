@@ -1,34 +1,200 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
-  <meta charset="UTF-8">
-  <title>Book Management</title>
-  <link rel="stylesheet" th:href="@{/styles.css}">
-  </head>
-<body class="page">
-  <header class="topbar">
-    <div class="brand">📚 Book Management</div>
-    <nav class="nav">
-      <a href="/" class="nav-link active">Home</a>
-      <a href="/books" class="nav-link">Books</a>
-      <a href="/books/add" class="btn">Add Book</a>
-    </nav>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Book Manager</title>
+  <script>
+    // Set this if backend runs on a different port (e.g., 8081)
+    window.API_BASE = window.API_BASE || "";
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 text-gray-900">
+  <header class="max-w-6xl mx-auto px-4 py-6">
+    <h1 class="text-2xl font-bold">📚 Book Management</h1>
+    <p class="text-sm text-gray-600">List, add, edit and delete your books.</p>
   </header>
 
-  <main class="container">
-    <section class="card hero">
-      <h1>Manage your library with ease</h1>
-      <p class="muted">This is a simple 3-tier Java app (Frontend + Backend + MongoDB). Use the links above to view or add books.</p>
-      <div class="actions">
-        <a href="/books" class="btn btn-primary">View Books</a>
-        <a href="/books/add" class="btn">Add a Book</a>
+  <main class="max-w-6xl mx-auto px-4">
+    <!-- actions -->
+    <div class="flex justify-between items-center mb-4">
+      <div class="text-sm text-gray-600" id="countInfo"></div>
+      <button id="addBtn" class="px-4 py-2 rounded-xl bg-black text-white hover:opacity-90">+ Add Book</button>
+    </div>
+
+    <!-- table -->
+    <div class="overflow-hidden rounded-2xl shadow bg-white">
+      <table class="min-w-full divide-y divide-gray-200" id="booksTable">
+        <thead class="bg-gray-100">
+          <tr>
+            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">Title</th>
+            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">Author</th>
+            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">ISBN</th>
+            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">Price</th>
+            <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100 bg-white" id="tbody"></tbody>
+      </table>
+    </div>
+
+    <!-- toast -->
+    <div id="toast" class="fixed bottom-6 right-6 hidden px-4 py-3 rounded-xl shadow text-white"></div>
+
+    <!-- modal -->
+    <div id="modal" class="fixed inset-0 bg-black/50 items-center justify-center hidden">
+      <div class="bg-white rounded-2xl shadow w-full max-w-md p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h2 id="modalTitle" class="text-lg font-semibold">Add Book</h2>
+          <button id="closeModal" class="text-gray-500 hover:text-gray-700">✕</button>
+        </div>
+        <form id="bookForm" class="space-y-4">
+          <input type="hidden" id="bookId" />
+          <div>
+            <label class="block text-sm font-medium mb-1" for="title">Title</label>
+            <input id="title" class="w-full rounded-xl border-gray-300 focus:ring-2 focus:ring-black focus:border-black" required />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1" for="author">Author</label>
+            <input id="author" class="w-full rounded-xl border-gray-300 focus:ring-2 focus:ring-black focus:border-black" required />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1" for="isbn">ISBN</label>
+            <input id="isbn" class="w-full rounded-xl border-gray-300 focus:ring-2 focus:ring-black focus:border-black" required />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1" for="price">Price</label>
+            <input id="price" type="number" step="0.01" class="w-full rounded-xl border-gray-300 focus:ring-2 focus:ring-black focus:border-black" required />
+          </div>
+          <div class="flex justify-end gap-2 pt-2">
+            <button type="button" id="cancelBtn" class="px-4 py-2 rounded-xl border">Cancel</button>
+            <button type="submit" class="px-4 py-2 rounded-xl bg-black text-white">Save</button>
+          </div>
+        </form>
       </div>
-    </section>
+    </div>
   </main>
 
-  <footer class="footer">© <span id="y"></span> Book Management • Demo
-    <script>document.getElementById('y').textContent=new Date().getFullYear()</script>
-  </footer>
+  <script>
+    const API = (path) => `${window.API_BASE}${path}`;
+    const tbody = document.getElementById('tbody');
+    const countInfo = document.getElementById('countInfo');
+    const toast = document.getElementById('toast');
+    const modal = document.getElementById('modal');
+    const addBtn = document.getElementById('addBtn');
+    const closeModal = document.getElementById('closeModal');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const bookForm = document.getElementById('bookForm');
+    const modalTitle = document.getElementById('modalTitle');
+    const bookId = document.getElementById('bookId');
+    const titleEl = document.getElementById('title');
+    const authorEl = document.getElementById('author');
+    const isbnEl = document.getElementById('isbn');
+    const priceEl = document.getElementById('price');
+
+    function showToast(msg, ok=true) {
+      toast.textContent = msg;
+      toast.className = `fixed bottom-6 right-6 px-4 py-3 rounded-xl shadow text-white ${ok ? 'bg-emerald-600' : 'bg-rose-600'}`;
+      toast.classList.remove('hidden');
+      setTimeout(() => toast.classList.add('hidden'), 2200);
+    }
+
+    function openModal(edit=false, data=null) {
+      modal.classList.remove('hidden', 'opacity-0');
+      modal.classList.add('flex');
+      modalTitle.textContent = edit ? 'Edit Book' : 'Add Book';
+      if (edit && data) {
+        bookId.value = data.id;
+        titleEl.value = data.title;
+        authorEl.value = data.author;
+        isbnEl.value = data.isbn;
+        priceEl.value = data.price;
+      } else {
+        bookId.value = '';
+        bookForm.reset();
+      }
+    }
+    function closeModalFn() { modal.classList.add('hidden'); modal.classList.remove('flex'); }
+
+    addBtn.onclick = () => openModal(false);
+    closeModal.onclick = cancelBtn.onclick = () => closeModalFn();
+    modal.addEventListener('click', (e) => { if (e.target === modal) closeModalFn(); });
+
+    async function fetchBooks() {
+      const res = await fetch(API('/api/books'));
+      const data = await res.json();
+      renderRows(data || []);
+    }
+
+    function renderRows(list) {
+      tbody.innerHTML = '';
+      list.forEach(b => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="px-4 py-3">${b.title ?? ''}</td>
+          <td class="px-4 py-3">${b.author ?? ''}</td>
+          <td class="px-4 py-3">${b.isbn ?? ''}</td>
+          <td class="px-4 py-3">₹${Number(b.price ?? 0).toFixed(2)}</td>
+          <td class="px-4 py-3 text-right">
+            <button class="px-3 py-1 rounded-lg border mr-2 hover:bg-gray-50" data-action="edit" data-id="${b.id}">Edit</button>
+            <button class="px-3 py-1 rounded-lg bg-rose-600 text-white hover:bg-rose-700" data-action="delete" data-id="${b.id}">Delete</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+      countInfo.textContent = `${list.length} book(s)`;
+    }
+
+    tbody.addEventListener('click', async (e) => {
+      const btn = e.target.closest('button'); if (!btn) return;
+      const id = btn.getAttribute('data-id');
+      const action = btn.getAttribute('data-action');
+      if (action === 'edit') {
+        const res = await fetch(API(`/api/books/${id}`));
+        if (!res.ok) return showToast('Unable to load book.', false);
+        const data = await res.json();
+        openModal(true, data);
+      } else if (action === 'delete') {
+        if (!confirm('Delete this book?')) return;
+        const resp = await fetch(API(`/api/books/${id}`), { method: 'DELETE' });
+        if (resp.status === 204) {
+          showToast('Deleted.');
+          fetchBooks();
+        } else {
+          const t = await resp.text();
+          showToast(`Delete failed (${resp.status}) ${t}`, false);
+        }
+      }
+    });
+
+    bookForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payload = {
+        title: titleEl.value.trim(),
+        author: authorEl.value.trim(),
+        isbn: isbnEl.value.trim(),
+        price: Number(priceEl.value)
+      };
+      const id = bookId.value;
+      const isEdit = !!id;
+      const resp = await fetch(API(isEdit ? `/api/books/${id}` : '/api/books'), {
+        method: isEdit ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (resp.ok) {
+        closeModalFn();
+        showToast(isEdit ? 'Updated.' : 'Created.');
+        fetchBooks();
+      } else {
+        const t = await resp.text();
+        showToast(`Save failed (${resp.status}) ${t}`, false);
+      }
+    });
+
+    // init
+    fetchBooks();
+  </script>
 </body>
 </html>
-
