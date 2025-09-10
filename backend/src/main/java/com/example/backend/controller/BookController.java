@@ -44,6 +44,12 @@ public class BookController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable String id) {
+        try {
+            if (id == null || id.isBlank() || !id.matches("^[a-fA-F0-9]{24}$")) {
+                return ResponseEntity.badRequest().build();
+            }
+        } catch (Exception ignored) {}
+
         if (!repo.existsById(id)) {
             return ResponseEntity.notFound().build();
         }
