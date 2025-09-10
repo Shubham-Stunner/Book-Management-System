@@ -2,8 +2,10 @@ package com.example.frontend.client;
 
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 
 import java.util.Arrays;
@@ -23,11 +25,23 @@ public class BookClient {
     }
 
     public void create(BookDto book) {
-        http.post().uri("/api/books").body(book).retrieve().toBodilessEntity();
+        http.post()
+            .uri("/api/books")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(book)
+            .retrieve();
     }
 
-    public void delete(String id) {
-        http.delete().uri("/api/books/{id}", id).retrieve().toBodilessEntity();
+    public boolean delete(String id) {
+        try {
+            http.delete()
+                .uri("/api/books/{id}", id)
+                .retrieve()
+                .toBodilessEntity();
+            return true;
+        } catch (HttpClientErrorException.NotFound e) {
+            return false;
+        }
     }
 
     @Data

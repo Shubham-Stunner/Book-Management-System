@@ -66,10 +66,20 @@ body.page{
   padding:10px 12px; border-radius:12px; border:1px solid var(--border); background:#0b1125; color:var(--text);
 }
 .field input:focus{outline:none; box-shadow:0 0 0 3px var(--ring)}
-.error{color:#ff8080; font-size:.9rem}
+.error{color:#ff8080;font-size:.9rem}
 
 .footer{
   margin-top:auto; padding:16px; text-align:center; color:var(--muted);
   border-top:1px solid var(--border); background:#0b1020bb; backdrop-filter: blur(4px);
 }
+
+/* Add/extend error + alert styling */
+.alert{
+  margin: 6px 0 12px 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #25314f;
+}
+.alert.success{border-color:#1b9f6c;background:#1b9f6c22;color:#d6ffef}
+.alert.danger{border-color:#e05555;background:#ff646422;color:#ffe4e4}
 
