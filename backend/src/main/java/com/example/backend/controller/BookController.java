@@ -2,6 +2,8 @@ package com.example.backend.controller;
 
 import com.example.backend.model.Book;
 import com.example.backend.repo.BookRepository;
+import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -38,11 +40,15 @@ public class BookController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable String id) {
-        if (repo.existsById(id)) {
+    public ResponseEntity<?> delete(@PathVariable String id) {
+        try {
             repo.deleteById(id);
             return ResponseEntity.noContent().build();
+        } catch (EmptyResultDataAccessException e) {
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to delete book: " + e.getMessage());
         }
-        return ResponseEntity.notFound().build();
     }
 }
