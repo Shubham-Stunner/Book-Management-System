@@ -4,9 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Book Manager</title>
-  <script>
-    // If backend runs on a different port (8081), the runner will set this at runtime.
-    window.API_BASE = window.API_BASE || "";
+  <script th:inline="javascript">
+    // Reads Spring property: --api.base=... (or application.properties: api.base=...)
+    window.API_BASE = /*[[${@environment.getProperty('api.base','')}]]*/ '';
   </script>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
@@ -72,124 +72,59 @@
     </div>
   </main>
 
-  <script>
-    const API = (path) => `${window.API_BASE}${path}`;
-    const tbody = document.getElementById('tbody');
-    const countInfo = document.getElementById('countInfo');
-    const toast = document.getElementById('toast');
-    const modal = document.getElementById('modal');
-    const addBtn = document.getElementById('addBtn');
-    const closeModal = document.getElementById('closeModal');
-    const cancelBtn = document.getElementById('cancelBtn');
-    const bookForm = document.getElementById('bookForm');
-    const modalTitle = document.getElementById('modalTitle');
-    const bookId = document.getElementById('bookId');
-    const titleEl = document.getElementById('title');
-    const authorEl = document.getElementById('author');
-    const isbnEl = document.getElementById('isbn');
-    const priceEl = document.getElementById('price');
+    <script>
+      const API = (p) => `${window.API_BASE}${p}`;
 
-    function showToast(msg, ok=true) {
-      toast.textContent = msg;
-      toast.className = `fixed bottom-6 right-6 px-4 py-3 rounded-xl shadow text-white ${ok ? 'bg-emerald-600' : 'bg-rose-600'}`;
-      toast.classList.remove('hidden');
-      setTimeout(() => toast.classList.add('hidden'), 2200);
-    }
-
-    function openModal(edit=false, data=null) {
-      modal.classList.remove('hidden', 'opacity-0');
-      modal.classList.add('flex');
-      modalTitle.textContent = edit ? 'Edit Book' : 'Add Book';
-      if (edit && data) {
-        bookId.value = data.id;
-        titleEl.value = data.title || '';
-        authorEl.value = data.author || '';
-        isbnEl.value = data.isbn || '';
-        priceEl.value = data.price || '';
-      } else {
-        bookId.value = '';
-        bookForm.reset();
+      async function refresh() {
+        const r = await fetch(API('/api/books'));
+        const list = await r.json();
+        const tbody = document.getElementById('tbody');
+        tbody.innerHTML = '';
+        (Array.isArray(list) ? list : []).forEach(b => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td class="px-4 py-3">${b.title ?? ''}</td>
+            <td class="px-4 py-3">${b.author ?? ''}</td>
+            <td class="px-4 py-3">${b.isbn ?? ''}</td>
+            <td class="px-4 py-3">₹${Number(b.price ?? 0).toFixed(2)}</td>
+            <td class="px-4 py-3 text-right">
+              <button class="px-3 py-1 rounded-lg border mr-2" onclick="editBook('${b.id}')">Edit</button>
+              <button class="px-3 py-1 rounded-lg bg-rose-600 text-white" onclick="deleteBook('${b.id}')">Delete</button>
+            </td>`;
+          tbody.appendChild(tr);
+        });
+        const ci = document.getElementById('countInfo'); if (ci) ci.textContent = `${(list||[]).length} book(s)`;
       }
-    }
-    function closeModalFn() { modal.classList.add('hidden'); modal.classList.remove('flex'); }
 
-    addBtn.onclick = () => openModal(false);
-    closeModal.onclick = cancelBtn.onclick = () => closeModalFn();
-    modal.addEventListener('click', (e) => { if (e.target === modal) closeModalFn(); });
-
-    async function fetchBooks() {
-      const res = await fetch(API('/api/books'));
-      const data = await res.json();
-      renderRows(Array.isArray(data) ? data : []);
-    }
-
-    function renderRows(list) {
-      tbody.innerHTML = '';
-      list.forEach(b => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td class="px-4 py-3">${b.title ?? ''}</td>
-          <td class="px-4 py-3">${b.author ?? ''}</td>
-          <td class="px-4 py-3">${b.isbn ?? ''}</td>
-          <td class="px-4 py-3">₹${Number(b.price ?? 0).toFixed(2)}</td>
-          <td class="px-4 py-3 text-right">
-            <button class="px-3 py-1 rounded-lg border mr-2 hover:bg-gray-50" data-action="edit" data-id="${b.id}">Edit</button>
-            <button class="px-3 py-1 rounded-lg bg-rose-600 text-white hover:bg-rose-700" data-action="delete" data-id="${b.id}">Delete</button>
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
-      countInfo.textContent = `${list.length} book(s)`;
-    }
-
-    tbody.addEventListener('click', async (e) => {
-      const btn = e.target.closest('button'); if (!btn) return;
-      const id = btn.getAttribute('data-id');
-      const action = btn.getAttribute('data-action');
-      if (action === 'edit') {
-        const res = await fetch(API(`/api/books/${id}`));
-        if (!res.ok) return showToast('Unable to load book.', false);
-        const data = await res.json();
-        openModal(true, data);
-      } else if (action === 'delete') {
+      async function deleteBook(id) {
         if (!confirm('Delete this book?')) return;
-        const resp = await fetch(API(`/api/books/${id}`), { method: 'DELETE' });
-        if (resp.status === 204) {
-          showToast('Deleted.');
-          fetchBooks();
-        } else {
-          const t = await resp.text();
-          showToast(`Delete failed (${resp.status}) ${t}`, false);
-        }
+        const r = await fetch(API(`/api/books/${id}`), { method: 'DELETE' });
+        if (r.status === 204) { refresh(); }
+        else { alert('Delete failed: ' + r.status + ' ' + await r.text()); }
       }
-    });
 
-    bookForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const payload = {
-        title: titleEl.value.trim(),
-        author: authorEl.value.trim(),
-        isbn: isbnEl.value.trim(),
-        price: Number(priceEl.value)
-      };
-      const id = bookId.value;
-      const isEdit = !!id;
-      const resp = await fetch(API(isEdit ? `/api/books/${id}` : '/api/books'), {
-        method: isEdit ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      if (resp.ok) {
-        closeModalFn();
-        showToast(isEdit ? 'Updated.' : 'Created.');
-        fetchBooks();
-      } else {
-        const t = await resp.text();
-        showToast(`Save failed (${resp.status}) ${t}`, false);
+      // Minimal "Add" handler: form id=bookForm; inputs with ids: title, author, isbn, price
+      const form = document.getElementById('bookForm');
+      if (form) {
+        form.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const payload = {
+            title:  document.getElementById('title').value.trim(),
+            author: document.getElementById('author').value.trim(),
+            isbn:   document.getElementById('isbn').value.trim(),
+            price:  Number(document.getElementById('price').value)
+          };
+          const r = await fetch(API('/api/books'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          if (r.status === 201) { form.reset(); refresh(); }
+          else { alert('Save failed: ' + r.status + ' ' + await r.text()); }
+        });
       }
-    });
 
-    fetchBooks();
-  </script>
-</body>
+      document.addEventListener('DOMContentLoaded', refresh);
+    </script>
+  </body>
 </html>
