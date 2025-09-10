@@ -20,33 +20,32 @@ public class BookController {
     public List<Book> all() { return repo.findAll(); }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> one(@PathVariable String id) {
+    public ResponseEntity<Book> one(@PathVariable String id) {
         return repo.findById(id)
-                .<ResponseEntity<?>>map(ResponseEntity::ok)
-                .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(new ErrorResponse("Book not found")));
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @PostMapping
-    public Book create(@RequestBody Book b) { return repo.save(b); }
+    public ResponseEntity<Book> create(@RequestBody Book b) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(repo.save(b));
+    }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> update(@PathVariable String id, @RequestBody Book b) {
+    public ResponseEntity<Book> update(@PathVariable String id, @RequestBody Book b) {
         return repo.findById(id).map(existing -> {
             existing.setTitle(b.getTitle());
             existing.setAuthor(b.getAuthor());
             existing.setIsbn(b.getIsbn());
             existing.setPrice(b.getPrice());
             return ResponseEntity.ok(repo.save(existing));
-        }).orElse(ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(new ErrorResponse("Book not found")));
+        }).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> delete(@PathVariable String id) {
+    public ResponseEntity<Void> delete(@PathVariable String id) {
         if (!repo.existsById(id)) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(new ErrorResponse("Book not found"));
+            return ResponseEntity.notFound().build();
         }
         repo.deleteById(id);
         return ResponseEntity.noContent().build();
