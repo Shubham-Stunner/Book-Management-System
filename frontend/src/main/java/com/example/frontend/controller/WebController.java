@@ -9,6 +9,7 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
 @Validated
@@ -34,7 +35,8 @@ public class WebController {
   @PostMapping("/books")
   public String create(@ModelAttribute("form") @Valid BookForm form,
                        BindingResult binding,
-                       Model model) {
+                       Model model,
+                       RedirectAttributes ra) {
     if (binding.hasErrors()) {
       return "add";
     }
@@ -44,12 +46,22 @@ public class WebController {
     dto.setIsbn(form.isbn);
     dto.setPrice(form.price);
     client.create(dto);
+    ra.addFlashAttribute("toast", "Book added successfully.");
     return "redirect:/books";
   }
 
   @PostMapping("/books/{id}/delete")
-  public String delete(@PathVariable String id) {
-    client.delete(id);
+  public String delete(@PathVariable String id, RedirectAttributes ra) {
+    try {
+      boolean removed = client.delete(id);
+      if (removed) {
+        ra.addFlashAttribute("toast", "Book deleted.");
+      } else {
+        ra.addFlashAttribute("toast", "Book was already deleted.");
+      }
+    } catch (Exception e) {
+      ra.addFlashAttribute("error", "Delete failed: " + e.getClass().getSimpleName());
+    }
     return "redirect:/books";
   }
 

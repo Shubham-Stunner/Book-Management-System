@@ -21,6 +21,8 @@
         <h2>Books</h2>
         <a href="/books/add" class="btn">+ Add Book</a>
       </div>
+      <div th:if="${toast}" class="alert success" th:text="${toast}"></div>
+      <div th:if="${error}" class="alert danger" th:text="${error}"></div>
 
       <div class="table-wrap">
         <table class="table">
