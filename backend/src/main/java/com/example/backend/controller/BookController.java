@@ -2,7 +2,6 @@ package com.example.backend.controller;
 
 import com.example.backend.model.Book;
 import com.example.backend.repo.BookRepository;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -28,7 +27,8 @@ public class BookController {
 
     @PostMapping
     public ResponseEntity<Book> create(@RequestBody Book b) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(repo.save(b));
+        Book saved = repo.save(b);
+        return ResponseEntity.status(201).body(saved);
     }
 
     @PutMapping("/{id}")

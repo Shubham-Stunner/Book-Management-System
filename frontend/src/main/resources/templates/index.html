@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Book Manager</title>
   <script>
-    // Set this if backend runs on a different port (e.g., 8081)
+    // If backend runs on a different port (8081), the runner will set this at runtime.
     window.API_BASE = window.API_BASE || "";
   </script>
   <script src="https://cdn.tailwindcss.com"></script>
@@ -17,13 +17,11 @@
   </header>
 
   <main class="max-w-6xl mx-auto px-4">
-    <!-- actions -->
     <div class="flex justify-between items-center mb-4">
       <div class="text-sm text-gray-600" id="countInfo"></div>
       <button id="addBtn" class="px-4 py-2 rounded-xl bg-black text-white hover:opacity-90">+ Add Book</button>
     </div>
 
-    <!-- table -->
     <div class="overflow-hidden rounded-2xl shadow bg-white">
       <table class="min-w-full divide-y divide-gray-200" id="booksTable">
         <thead class="bg-gray-100">
@@ -39,10 +37,8 @@
       </table>
     </div>
 
-    <!-- toast -->
     <div id="toast" class="fixed bottom-6 right-6 hidden px-4 py-3 rounded-xl shadow text-white"></div>
 
-    <!-- modal -->
     <div id="modal" class="fixed inset-0 bg-black/50 items-center justify-center hidden">
       <div class="bg-white rounded-2xl shadow w-full max-w-md p-6">
         <div class="flex items-center justify-between mb-4">
@@ -106,10 +102,10 @@
       modalTitle.textContent = edit ? 'Edit Book' : 'Add Book';
       if (edit && data) {
         bookId.value = data.id;
-        titleEl.value = data.title;
-        authorEl.value = data.author;
-        isbnEl.value = data.isbn;
-        priceEl.value = data.price;
+        titleEl.value = data.title || '';
+        authorEl.value = data.author || '';
+        isbnEl.value = data.isbn || '';
+        priceEl.value = data.price || '';
       } else {
         bookId.value = '';
         bookForm.reset();
@@ -124,7 +120,7 @@
     async function fetchBooks() {
       const res = await fetch(API('/api/books'));
       const data = await res.json();
-      renderRows(data || []);
+      renderRows(Array.isArray(data) ? data : []);
     }
 
     function renderRows(list) {
@@ -193,7 +189,6 @@
       }
     });
 
-    // init
     fetchBooks();
   </script>
 </body>
